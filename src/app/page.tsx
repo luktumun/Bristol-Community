@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Clock3,
@@ -46,11 +46,15 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [authNotice, setAuthNotice] = useState("");
+  const loadRequest = useRef(0);
 
   async function load() {
+    const requestId = ++loadRequest.current;
     const [meResponse, storiesResponse] = await Promise.all([fetch("/api/auth/me"), fetch("/api/stories")]);
     const me = await meResponse.json();
     const storyData = await storiesResponse.json();
+    if (requestId !== loadRequest.current) return;
     setUser(me.user ?? null);
     setStories(storyData.stories?.length ? storyData.stories : demoStories);
     setLoading(false);
@@ -60,6 +64,13 @@ export default function Home() {
     // Initial data synchronization happens once when the client mounts.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified") === "1") {
+      setAuthMode("login");
+      setAuthOpen(true);
+      setAuthNotice("Email verified successfully. You can now log in.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, []);
 
   const filtered = useMemo(
@@ -73,6 +84,7 @@ export default function Home() {
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    ++loadRequest.current;
     setUser(null);
   }
 
@@ -104,7 +116,7 @@ export default function Home() {
           </div>
           <button className="md:hidden" aria-label="Open menu" onClick={() => setMobileMenu(!mobileMenu)}>{mobileMenu ? <X /> : <Menu />}</button>
         </div>
-        {mobileMenu && <div className="border-t border-[#e5e8ed] px-5 py-4 md:hidden"><a className="block py-2 font-semibold" href="#stories">Explore stories</a><button className="mt-3 w-full btn-dark" onClick={openNew}><Plus size={16} /> Share a story</button></div>}
+        {mobileMenu && <div className="border-t border-[#e5e8ed] px-5 py-4 md:hidden"><a className="block py-2 font-semibold" href="#stories">Explore stories</a>{user ? <><p className="py-2 text-sm font-semibold text-[#596675]">Hi, {user.name.split(" ")[0]}</p><button className="mt-2 w-full btn-secondary" onClick={() => { logout(); setMobileMenu(false); }}><LogOut size={15} /> Log out</button></> : <><button className="mt-3 w-full btn-dark" onClick={openNew}><Plus size={16} /> Share a story</button></>}</div>}
       </header>
 
       <section className="mx-auto grid max-w-7xl gap-12 px-5 pb-16 pt-14 lg:grid-cols-[1.1fr_.9fr] lg:px-8 lg:pb-24 lg:pt-24">
@@ -131,9 +143,9 @@ export default function Home() {
 
       <section id="how-it-works" className="mx-auto grid max-w-7xl gap-10 px-5 py-16 lg:grid-cols-[.8fr_1.2fr] lg:px-8 lg:py-24"><div><div className="eyebrow"><span className="eyebrow-dot bg-[#27745d]" /> A kinder internet, locally</div><h2 className="mt-4 max-w-md font-[family-name:var(--font-display)] text-4xl font-semibold leading-tight tracking-tight">Made for the people who make Bristol what it is.</h2></div><div className="grid gap-4 sm:grid-cols-3">{[["01","Share","Your news, events, ideas and everyday wins."],["02","Connect","Find the people and places that matter to you."],["03","Make change","Turn a good local idea into something real."]].map(([number,title,body]) => <div key={number} className="rounded-2xl border border-[#e5e8ed] bg-white p-6"><span className="text-sm font-bold text-[#ec6b4f]">{number}</span><h3 className="mt-10 font-[family-name:var(--font-display)] text-2xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-[#71808e]">{body}</p></div>)}</div></section>
 
-      <footer className="bg-[#172b32] text-white"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-10 sm:flex-row sm:items-end sm:justify-between lg:px-8"><div><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-[#ec6b4f]"><Sparkles size={17} /></span><strong className="font-[family-name:var(--font-display)] text-lg">Bristol Common</strong></div><p className="mt-4 max-w-sm text-sm leading-6 text-white/55">A community-powered platform for Bristol&apos;s local stories and shared future.</p></div><div className="text-sm text-white/60 sm:text-right"><p>Designed & built by <strong className="text-white">Rajendra S</strong></p><p className="mt-1"><a className="hover:text-[#f3b7a8]" href="https://github.com/srajendra923" target="_blank" rel="noreferrer">GitHub</a> · <a className="hover:text-[#f3b7a8]" href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a></p></div></div></footer>
+      <footer className="bg-[#172b32] text-white"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-10 sm:flex-row sm:items-end sm:justify-between lg:px-8"><div><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-[#ec6b4f]"><Sparkles size={17} /></span><strong className="font-[family-name:var(--font-display)] text-lg">Bristol Common</strong></div><p className="mt-4 max-w-sm text-sm leading-6 text-white/55">A community-powered platform for Bristol&apos;s local stories and shared future.</p></div><div className="text-sm text-white/60 sm:text-right"><p>Designed & built by <strong className="text-white">Rajendra Singh</strong></p><p className="mt-1"><a className="hover:text-[#f3b7a8]" href="https://github.com/luktumun" target="_blank" rel="noreferrer">GitHub Profile</a> · <a className="hover:text-[#f3b7a8]" href="https://www.linkedin.com/in/rajendra-singh-358579107/" target="_blank" rel="noreferrer">LinkedIn</a></p><p className="mt-1"><a className="hover:text-[#f3b7a8]" href="https://github.com/luktumun/Bristol-Community.git" target="_blank" rel="noreferrer">View GitHub Repository</a></p></div></div></footer>
 
-      {authOpen && <AuthModal mode={authMode} onClose={() => setAuthOpen(false)} onSuccess={() => { setAuthOpen(false); load(); }} setMode={setAuthMode} />}
+      {authOpen && <AuthModal mode={authMode} notice={authNotice} onClose={() => { setAuthOpen(false); setAuthNotice(""); }} onSuccess={async (message, authenticatedUser) => { if (message) { setAuthMode("login"); setAuthNotice(message); return; } ++loadRequest.current; setUser(authenticatedUser ?? null); setAuthOpen(false); setAuthNotice(""); }} setMode={(mode) => { setAuthNotice(""); setAuthMode(mode); }} />}
       {formOpen && <StoryModal story={editing} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); load(); }} />}
     </main>
   );
@@ -144,10 +156,10 @@ function StoryCard({ story, canEdit, onEdit, onDelete }: { story: Story; canEdit
   return <article className="group flex min-h-[280px] flex-col justify-between rounded-2xl border border-[#e5e8ed] bg-[#fbfcfd] p-6 transition hover:-translate-y-1 hover:border-[#cad2d9] hover:shadow-xl hover:shadow-[#20323b]/5"><div><div className="flex items-center justify-between"><span className={`rounded-full px-3 py-1 text-xs font-bold ${colors[story.category]}`}>{story.category}</span>{story.status === "pending" && <span className="flex items-center gap-1 text-xs font-semibold text-[#a37b30]"><Clock3 size={13} /> Pending</span>}</div><h3 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-semibold leading-tight">{story.title}</h3><p className="mt-3 line-clamp-3 text-sm leading-6 text-[#71808e]">{story.excerpt}</p></div><div className="mt-7 flex items-end justify-between border-t border-[#e5e8ed] pt-4"><div className="flex items-center gap-2"><span className="avatar-sm bg-[#c8d9d3]">{story.author.name.slice(0, 2).toUpperCase()}</span><div><p className="text-xs font-bold">{story.author.name}</p><p className="text-[11px] text-[#93a0ac]">{new Date(story.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p></div></div>{canEdit && <div className="flex gap-1"><button onClick={onEdit} className="icon-button" aria-label="Edit story"><FileText size={15} /></button><button onClick={onDelete} className="icon-button text-[#c45d43]" aria-label="Delete story"><Trash2 size={15} /></button></div>}</div></article>;
 }
 
-function AuthModal({ mode, setMode, onClose, onSuccess }: { mode: "login" | "register"; setMode: (mode: "login" | "register") => void; onClose: () => void; onSuccess: () => void }) {
+function AuthModal({ mode, setMode, notice, onClose, onSuccess }: { mode: "login" | "register"; setMode: (mode: "login" | "register") => void; notice: string; onClose: () => void; onSuccess: (message?: string, user?: User) => void | Promise<void> }) {
   const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
-  async function submit(form: HTMLFormElement) { setBusy(true); setError(""); const data = Object.fromEntries(new FormData(form)); const response = await fetch(`/api/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); const result = await response.json(); setBusy(false); if (!response.ok) return setError(result.error || "Something went wrong."); onSuccess(); }
-  return <div className="modal-backdrop"><div className="modal-card"><button className="absolute right-5 top-5 text-[#8b96a2]" onClick={onClose} aria-label="Close"><X size={20} /></button><div className="eyebrow"><span className="eyebrow-dot" /> Bristol Common</div><h2 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-semibold">{mode === "login" ? "Welcome back" : "Join your neighbours"}</h2><p className="mt-2 text-sm leading-6 text-[#71808e]">{mode === "login" ? "Sign in to share and manage your stories." : "Create a free account to contribute to the community."}</p><form className="mt-7 space-y-4" onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}>{mode === "register" && <label className="label">Your name<input className="input mt-1" name="name" required minLength={2} /></label>}<label className="label">Email<input className="input mt-1" type="email" name="email" required /></label><label className="label">Password<input className="input mt-1" type="password" name="password" required minLength={8} /></label>{error && <p className="rounded-lg bg-[#fff0ed] p-3 text-sm text-[#c04e3a]">{error}</p>}<button disabled={busy} className="btn-coral w-full justify-center disabled:opacity-60">{busy ? "Please wait..." : mode === "login" ? "Log in" : "Create account"} <ArrowRight size={16} /></button></form><p className="mt-6 text-center text-sm text-[#71808e]">{mode === "login" ? "New to Bristol Common?" : "Already have an account?"} <button onClick={() => setMode(mode === "login" ? "register" : "login")} className="font-bold text-[#ec6b4f]">{mode === "login" ? "Join us" : "Log in"}</button></p></div></div>;
+  async function submit(form: HTMLFormElement) { setBusy(true); setError(""); const data = Object.fromEntries(new FormData(form)); const response = await fetch(`/api/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); const result = await response.json(); setBusy(false); if (!response.ok) return setError(result.error || "Something went wrong."); await onSuccess(mode === "register" ? result.message : undefined, result.user); }
+  return <div className="modal-backdrop"><div className="modal-card"><button className="absolute right-5 top-5 text-[#8b96a2]" onClick={onClose} aria-label="Close"><X size={20} /></button><div className="eyebrow"><span className="eyebrow-dot" /> Bristol Common</div><h2 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-semibold">{mode === "login" ? "Welcome back" : "Join your neighbours"}</h2><p className="mt-2 text-sm leading-6 text-[#71808e]">{mode === "login" ? "Sign in to share and manage your stories." : "Create a free account to contribute to the community."}</p>{notice && <p className="mt-5 rounded-lg bg-[#e8f2ec] p-3 text-sm text-[#27745d]">{notice}</p>}<form className="mt-7 space-y-4" onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}>{mode === "register" && <label className="label">Your name<input className="input mt-1" name="name" required minLength={2} /></label>}<label className="label">Email<input className="input mt-1" type="email" name="email" required /></label><label className="label">Password<input className="input mt-1" type="password" name="password" required minLength={8} /></label>{error && <p className="rounded-lg bg-[#fff0ed] p-3 text-sm text-[#c04e3a]">{error}</p>}<button disabled={busy} className="btn-coral w-full justify-center disabled:opacity-60">{busy ? "Please wait..." : mode === "login" ? "Log in" : "Create account"} <ArrowRight size={16} /></button></form><p className="mt-6 text-center text-sm text-[#71808e]">{mode === "login" ? "New to Bristol Common?" : "Already have an account?"} <button onClick={() => setMode(mode === "login" ? "register" : "login")} className="font-bold text-[#ec6b4f]">{mode === "login" ? "Join us" : "Log in"}</button></p></div></div>;
 }
 
 function StoryModal({ story, onClose, onSaved }: { story: Story | null; onClose: () => void; onSaved: () => void }) {
