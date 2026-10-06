@@ -62,15 +62,7 @@ export default function Home() {
 
   useEffect(() => {
     // Initial data synchronization happens once when the client mounts.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("verified") === "1") {
-      setAuthMode("login");
-      setAuthOpen(true);
-      setAuthNotice("Email verified successfully. You can now log in.");
-      window.history.replaceState({}, "", window.location.pathname);
-    }
   }, []);
 
   const filtered = useMemo(
@@ -158,7 +150,7 @@ function StoryCard({ story, canEdit, onEdit, onDelete }: { story: Story; canEdit
 
 function AuthModal({ mode, setMode, notice, onClose, onSuccess }: { mode: "login" | "register"; setMode: (mode: "login" | "register") => void; notice: string; onClose: () => void; onSuccess: (message?: string, user?: User) => void | Promise<void> }) {
   const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
-  async function submit(form: HTMLFormElement) { setBusy(true); setError(""); const data = Object.fromEntries(new FormData(form)); const response = await fetch(`/api/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); const result = await response.json(); setBusy(false); if (!response.ok) return setError(result.error || "Something went wrong."); await onSuccess(mode === "register" ? result.message : undefined, result.user); }
+  async function submit(form: HTMLFormElement) { setBusy(true); setError(""); const data = Object.fromEntries(new FormData(form)); const response = await fetch(`/api/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); const result = await response.json(); setBusy(false); if (!response.ok) return setError(result.error || "Something went wrong."); await onSuccess(undefined, result.user); }
   return <div className="modal-backdrop"><div className="modal-card"><button className="absolute right-5 top-5 text-[#8b96a2]" onClick={onClose} aria-label="Close"><X size={20} /></button><div className="eyebrow"><span className="eyebrow-dot" /> Bristol Common</div><h2 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-semibold">{mode === "login" ? "Welcome back" : "Join your neighbours"}</h2><p className="mt-2 text-sm leading-6 text-[#71808e]">{mode === "login" ? "Sign in to share and manage your stories." : "Create a free account to contribute to the community."}</p>{notice && <p className="mt-5 rounded-lg bg-[#e8f2ec] p-3 text-sm text-[#27745d]">{notice}</p>}<form className="mt-7 space-y-4" onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}>{mode === "register" && <label className="label">Your name<input className="input mt-1" name="name" required minLength={2} /></label>}<label className="label">Email<input className="input mt-1" type="email" name="email" required /></label><label className="label">Password<input className="input mt-1" type="password" name="password" required minLength={8} /></label>{error && <p className="rounded-lg bg-[#fff0ed] p-3 text-sm text-[#c04e3a]">{error}</p>}<button disabled={busy} className="btn-coral w-full justify-center disabled:opacity-60">{busy ? "Please wait..." : mode === "login" ? "Log in" : "Create account"} <ArrowRight size={16} /></button></form><p className="mt-6 text-center text-sm text-[#71808e]">{mode === "login" ? "New to Bristol Common?" : "Already have an account?"} <button onClick={() => setMode(mode === "login" ? "register" : "login")} className="font-bold text-[#ec6b4f]">{mode === "login" ? "Join us" : "Log in"}</button></p></div></div>;
 }
 
